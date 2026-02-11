@@ -24,11 +24,8 @@ class Game:
     #a method is a function tied to a Class
 
     def load_data(self):
-        print("Data is loading")
         self.game_dir = path.dirname(__file__)
-        print(self.game_dir)
         self.map = Map(path.join(self.game_dir, 'level1.txt'))
-        print("Data is loaded")
 
     def new(self):
         #Starts the game

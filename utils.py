@@ -9,9 +9,7 @@ class Map:
         #Open a specific tile and close it with "with"
         with open(filename, 'rt') as f:
             for line in f:
-                print("PLEASE")
                 self.data.append(line.strip())
-                print("something added")
         print(self.data)
         self.tilewidth = len(self.data[0])
         self.tileheight = len(self.data)
