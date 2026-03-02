@@ -26,8 +26,8 @@ class Game:
     def load_data(self):
         #loading map and images
         self.game_dir = path.dirname(__file__)
-        self.img_dir = path.join(self.game_dir, 'image')
-        self.wall_img = pg.image.load(path.join(self.img_dir), 'wall_img')
+        self.img_dir = path.join(self.game_dir, 'images')
+        self.wall_img = pg.image.load(path.join(self.img_dir, 'WallSprite.png'))
         self.map = Map(path.join(self.game_dir, 'level1.txt'))
 
     def new(self):

@@ -5,7 +5,7 @@ WIDTH = 800
 HEIGHT = 600
 FPS = 60
 TITLE = "My cool game..."
-TILESIZE = 28
+TILESIZE = 32
 
 #Character Attributes
 PLAYER_SPEED = 280
