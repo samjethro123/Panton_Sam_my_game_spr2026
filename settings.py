@@ -1,13 +1,15 @@
+import pygame as pg
 
 #Initializing Variables
 WIDTH = 800
 HEIGHT = 600
 FPS = 60
 TITLE = "My cool game..."
-TILESIZE = 32
+TILESIZE = 28
 
 #Character Attributes
 PLAYER_SPEED = 280
+PLAYER_HIT_RECT = pg.Rect(0,0,TILESIZE,TILESIZE)
 
 #Color Values
 
