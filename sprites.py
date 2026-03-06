@@ -45,7 +45,7 @@ def collide_walls(sprite, group, dir):
 
 class Player(Sprite):
     def __init__(self, game, x, y):
-        #Adding to sprites = draw
+        #Adding to sprites -> draw
         self.groups = game.all_sprites
         Sprite.__init__(self, self.groups)
         self.game = game
@@ -53,8 +53,8 @@ class Player(Sprite):
         #loading animated attributes
         self.standingsheet = SpriteSheet(path.join(self.game.img_dir, "sprite_sheet.png"))
         self.walkingsheet = SpriteSheet(path.join(self.game.img_dir, "player_direction.png"))
-        self.standing_frames = self.load_images(self.standingsheet)
-        self.walking_frames = self.load_images(self.walkingsheet)
+        self.standing_frames = self.load_images(self.standingsheet, 2)
+        self.walking_frames = self.load_images(self.walkingsheet, 4)
 
         #Player/Sprite attributes
         self.image = pg.Surface((TILESIZE, TILESIZE))
@@ -67,72 +67,82 @@ class Player(Sprite):
         #Attributes for animation
         self.jumping = False
         self.walking = False
-        self.last_update = 0
+        self.last_update = -1000
         self.current_frame = 0
 
     def get_keys(self):
         self.vel = vec(0, 0) #resetting the vector 
         keys = pg.key.get_pressed()
-        #WASD pressed -> movement
+
+        if keys[pg.K_f]:
+            print("i fired")
+            p = Projectile(self.game, self.rect.x, self.rect.y)
+
+        #WASD pressed -> movement, also sets self.walking
+        #0 = up, 1 = left, 2 = right, 3 = down
         if keys[pg.K_a]:
             self.vel.x = -PLAYER_SPEED
             self.walking = True
-            #Cooldown.start()
+            self.direction = 1
         if keys[pg.K_w]:
             self.vel.y = -PLAYER_SPEED
             self.walking = True
-            #Cooldown.start()
+            self.direction = 0
         if keys[pg.K_s]:
             self.vel.y = PLAYER_SPEED
             self.walking = True
-            #Cooldown.start()
+            self.direction = 3
         if keys[pg.K_d]:
             self.vel.x = PLAYER_SPEED
             self.walking = True
-            
-            #Cooldown.start()
+            self.direction = 2
+
         if not keys[pg.K_a] and not keys[pg.K_w] and not keys[pg.K_s] and not keys[pg.K_d]:
             self.walking = False
-        #print(self.walking)
 
         #Diagonal movement correction
         if self.vel.x != 0 and self.vel.y != 0:
             self.vel *= 0.7071
 
-    def load_images(self, sprite, frames):
-        frames = [sprite.get_image(0,0,TILESIZE, TILESIZE), sprite.get_image(TILESIZE,0,TILESIZE, TILESIZE)] 
-
+    def load_images(self, sprite, numframes):
+        #Adds each frame as an image to a list
+        frames = []
+        for frame in range(numframes):
+            frames.append(sprite.get_image(TILESIZE*frame,0,TILESIZE,TILESIZE))
+        #Makes transparent pixels transparent
         for frame in frames:
             frame.set_colorkey(BLACK)
         return frames
 
-    def animate(self):
+    def animate(self, idlerate, walkingrate):
         now = pg.time.get_ticks()
+
         #Standing animation
         if not self.jumping and not self.walking:
-            if now - self.last_update > 1000:
+            if now - self.last_update > idlerate:
                 self.last_update = now
                 self.current_frame = (self.current_frame + 1) % len(self.standing_frames)
                 bottom = self.rect.bottom
                 self.image = self.standing_frames[self.current_frame]
                 self.rect = self.image.get_rect()
                 self.rect.bottom = bottom
+
+        #Wakling animation
         elif self.walking and not self.jumping:
-            if now - self.last_update > 1000:
+            if now - self.last_update > walkingrate:
                 self.last_update = now
-                self.current_frame = (self.current_frame + 1) % len(self.walking_frames)
+                self.current_frame = self.direction
                 bottom = self.rect.bottom
                 self.image = self.walking_frames[self.current_frame]
                 self.rect = self.image.get_rect()
                 self.rect.bottom = bottom
-        
 
     def update(self):
+        #changes self.vel direction depending on key pressed
         self.get_keys()
-        #if Cooldown.ready(pg):
-        #    self.walking = True
-    
-        self.animate()
+
+        #updates to next frame depending on state, only every 1000 ticks
+        self.animate(IDLE_RATE, WALKING_RATE)
 
         #Syncing the object with the sprite
         self.rect.center = self.pos 
@@ -165,6 +175,24 @@ class Mob(Sprite):
         if hits:
             print(hits)
 
+class Projectile(Sprite):
+    def __init__(self, game, x, y):
+        #Additionally added to all_mobs so that we can access the mobs w/o the player or walls
+        self.groups = game.all_sprites, game.all_projectiles
+        Sprite.__init__(self, self.groups)
+        self.game = game
+        self.image = pg.Surface((TILESIZE, TILESIZE))
+        self.image.fill(YELLOW)
+        self.rect = self.image.get_rect()
+        self.vel = vec(0,0)
+        self.pos = vec(x,y)
+    def movement(self):
+        pass
+    def update(self):
+        hits = pg.sprite.spritecollide(self, self.game.all_walls, False)
+        if hits:
+            print(hits)
+
 class Object(Sprite):
     def __init__(self, game, x, y):
         #Similar to mob, added to all_walls
@@ -187,13 +215,22 @@ class Wall(Sprite):
         Sprite.__init__(self, self.groups)
         self.game = game
         self.image = game.wall_img
-        #self.image = pg.Surface((TILESIZE, TILESIZE))
-        #self.image.fill(GREEN)
         self.rect = self.image.get_rect()
         self.pos = vec(x,y) * TILESIZE
         self.rect.center = self.pos
     def update(self):
         hits = pg.sprite.spritecollide(self, self.game.all_mobs, False)
+
+class Box(Sprite):
+    def __init__(self, game, x, y):
+        self.groups = game.all_sprites
+        Sprite.__init__(self, self.groups)
+
+        self.image = game
+        self.game = game
+
+
+
 
 class Coin(Sprite):
     def __init__(self, game, x, y):

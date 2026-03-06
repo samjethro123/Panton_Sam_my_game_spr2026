@@ -11,8 +11,11 @@ TILESIZE = 32
 PLAYER_SPEED = 280
 PLAYER_HIT_RECT = pg.Rect(0,0,TILESIZE,TILESIZE)
 
-#Color Values
+#Framerate for animations
+IDLE_RATE = 1000
+WALKING_RATE = 1
 
+#Color Values
 #tuples storing rbg values
 BLUE = (0, 0, 255) #bg
 WHITE = (255, 255, 255) #player

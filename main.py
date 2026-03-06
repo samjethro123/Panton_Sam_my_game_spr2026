@@ -38,11 +38,6 @@ class Game:
         self.all_mobs = pg.sprite.Group()
 
         self.load_data()
-
-        #Instantiating the objects
-        #self.goal = Object(self, 15, 15)
-        #self.player = Player(self, 15, 15)
-        #self.mob = Mob(self, 15, 15)
         for row,tiles in enumerate(self.map.data):
             for col, tile in enumerate(tiles):
                 if tile == '1':
@@ -80,8 +75,6 @@ class Game:
 
     def update(self):
         self.all_sprites.update()
-        #if self.player.rect.colliderect(self.goal.rect):
-            #self.goal.pos = (100, 100)
 
     def draw(self):
         #BG color
