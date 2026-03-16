@@ -1,3 +1,6 @@
+
+from unittest import case
+
 import pygame as pg
 from pygame.sprite import Sprite
 from settings import *
@@ -10,7 +13,6 @@ vec = pg.math.Vector2
 def collide_hit_rect(one, two):
     return one.hit_rect.colliderect(two.rect)
 
-#Checks for x/y collision and sets position depending on direction
 def collide_walls(sprite, group, dir):
     #Stops movement in x direction
     if dir == 'x':
@@ -42,6 +44,48 @@ def collide_walls(sprite, group, dir):
 
             sprite.vel.y = 0
             sprite.hit_rect.centery = sprite.pos.y
+
+#Checks for x/y collision
+def collideDir(sprite, group):
+    hits = pg.sprite.spritecollide(sprite, group, False, collide_hit_rect)
+    if hits:
+        #Distance of the main sprite to the detected collider, centered on the collider
+        distanceRight = sprite.hit_rect.centerx - hits[0].rect.centerx
+        distanceDown = sprite.hit_rect.centery - hits[0].rect.centery
+        distanceLeft = hits[0].rect.centerx - sprite.hit_rect.centerx
+        distanceUp = hits[0].rect.centery - sprite.hit_rect.centery
+
+        if distanceRight > distanceLeft and distanceRight > distanceDown and distanceRight > distanceUp:
+            return "left", hits[0]
+        if distanceDown > distanceRight and distanceDown > distanceLeft and distanceDown > distanceUp:
+            return "up", hits[0]
+        if distanceLeft > distanceRight and distanceLeft > distanceDown and distanceLeft > distanceUp:
+            return "right", hits[0]
+        if distanceUp > distanceRight and distanceUp > distanceDown and distanceUp > distanceLeft:
+            return "down", hits[0]
+    return "none", "none"
+
+
+def collide_walls(sprite, group):
+    dirCardinal,wall = collideDir(sprite, group)
+    match dirCardinal:
+        case "right":
+            sprite.pos.x = wall.rect.left - sprite.hit_rect.width / 2
+            sprite.vel.x = 0
+            sprite.hit_rect.centerx = sprite.pos.x
+        case "left":
+            sprite.pos.x = wall.rect.right + sprite.hit_rect.width / 2
+            sprite.vel.x = 0
+            sprite.hit_rect.centerx = sprite.pos.x
+        case "down":
+            sprite.pos.y = wall.rect.top - sprite.hit_rect.height / 2
+            sprite.vel.y = 0
+            sprite.hit_rect.centery = sprite.pos.y
+        case "up":
+            sprite.pos.y = wall.rect.bottom + sprite.hit_rect.height / 2
+            sprite.vel.y = 0
+            sprite.hit_rect.centery = sprite.pos.y
+
 
 class Player(Sprite):
     def __init__(self, game, x, y):
@@ -81,18 +125,22 @@ class Player(Sprite):
         #WASD pressed -> movement, also sets self.walking
         #0 = up, 1 = left, 2 = right, 3 = down
         if keys[pg.K_a]:
+            #Left
             self.vel.x = -PLAYER_SPEED
             self.walking = True
             self.direction = 1
         if keys[pg.K_w]:
+            #Up
             self.vel.y = -PLAYER_SPEED
             self.walking = True
             self.direction = 0
         if keys[pg.K_s]:
+            #Down
             self.vel.y = PLAYER_SPEED
             self.walking = True
             self.direction = 3
         if keys[pg.K_d]:
+            #Right
             self.vel.x = PLAYER_SPEED
             self.walking = True
             self.direction = 2
@@ -149,35 +197,23 @@ class Player(Sprite):
 
         #Vector movement
         self.pos += self.vel * self.game.dt
+        
+        self.hit_rect.centery = self.pos.y
+        self.hit_rect.centerx = self.pos.x
+
         self.hit_rect.centery = self.pos.y
         collide_walls(self, self.game.all_walls, 'y')
         self.hit_rect.centerx = self.pos.x
         collide_walls(self, self.game.all_walls, 'x')
+        #collide_walls(self, self.game.all_walls)
 
         for colliders in pg.sprite.spritecollide(self, self.game.all_walls, False):
             print("collided with " + str(colliders))
-        
-class Mob(Sprite):
-    def __init__(self, game, x, y):
-        #Additionally added to all_mobs so that we can access the mobs w/o the player or walls
-        self.groups = game.all_sprites, game.all_mobs
-        Sprite.__init__(self, self.groups)
-        self.game = game
-        self.image = pg.Surface((TILESIZE, TILESIZE))
-        self.image.fill(BLACK)
-        self.rect = self.image.get_rect()
-        self.vel = vec(0,0)
-        self.pos = vec(x,y) * TILESIZE
-    def movement(self):
-        pass
-    def update(self):
-        hits = pg.sprite.spritecollide(self, self.game.all_walls, False)
-        if hits:
-            print(hits)
+
+
 
 class Projectile(Sprite):
     def __init__(self, game, x, y):
-        #Additionally added to all_mobs so that we can access the mobs w/o the player or walls
         self.groups = game.all_sprites, game.all_projectiles
         Sprite.__init__(self, self.groups)
         self.game = game
@@ -192,6 +228,24 @@ class Projectile(Sprite):
         hits = pg.sprite.spritecollide(self, self.game.all_walls, False)
         if hits:
             print(hits)
+
+
+
+class Box(Sprite):
+    def __init__(self, game, x, y):
+        self.game = game
+        self.groups = game.all_sprites, game.all_boxes
+        Sprite.__init__(self, self.groups)
+
+        self.image = pg.Surface((TILESIZE, TILESIZE))
+        self.image.fill(RED)
+        self.rect = self.image.get_rect()
+        self.vel = vec(0,0)
+        self.pos = vec(x,y) * TILESIZE
+        self.hit_rect = PLAYER_HIT_RECT
+
+
+
 
 class Object(Sprite):
     def __init__(self, game, x, y):
@@ -221,17 +275,6 @@ class Wall(Sprite):
     def update(self):
         hits = pg.sprite.spritecollide(self, self.game.all_mobs, False)
 
-class Box(Sprite):
-    def __init__(self, game, x, y):
-        self.groups = game.all_sprites
-        Sprite.__init__(self, self.groups)
-
-        self.image = game
-        self.game = game
-
-
-
-
 class Coin(Sprite):
     def __init__(self, game, x, y):
         self.groups = game.all_sprites
@@ -245,4 +288,23 @@ class Coin(Sprite):
         self.rect.center = self.pos
     def update(self):
         hits = pg.sprite.spritecollide(self, self.game.all_mobs, False)
+
+        
+class Mob(Sprite):
+    def __init__(self, game, x, y):
+        #Additionally added to all_mobs so that we can access the mobs w/o the player or walls
+        self.groups = game.all_sprites, game.all_mobs
+        Sprite.__init__(self, self.groups)
+        self.game = game
+        self.image = pg.Surface((TILESIZE, TILESIZE))
+        self.image.fill(BLACK)
+        self.rect = self.image.get_rect()
+        self.vel = vec(0,0)
+        self.pos = vec(x,y) * TILESIZE
+    def movement(self):
+        pass
+    def update(self):
+        hits = pg.sprite.spritecollide(self, self.game.all_walls, False)
+        if hits:
+            print(hits)
 

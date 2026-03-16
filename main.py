@@ -6,6 +6,13 @@ from settings import *
 from sprites import *
 from utils import *
 
+def test(one, two):
+    return one, two
+
+print(test(1,2))
+one,two = test(1,2)
+print(one)
+
 #the game class that will be instantiaed in order to run the game...
 class Game:
     def __init__(self):
@@ -36,6 +43,7 @@ class Game:
         self.all_sprites = pg.sprite.Group()
         self.all_walls = pg.sprite.Group()
         self.all_mobs = pg.sprite.Group()
+        self.all_boxes = pg.sprite.Group()
 
         self.load_data()
         for row,tiles in enumerate(self.map.data):
@@ -45,6 +53,8 @@ class Game:
                     Wall(self, col, row)
                 if tile == 'P':
                     self.player = Player(self, col, row)
+                if tile == 'B':
+                    self.box = Box(self, col, row)
         #Telling the game to run
         self.run()
 
