@@ -18,6 +18,7 @@ def collide_walls(sprite, group, dir):
     if dir == 'x':
         #Identifies the collider 
         hits = pg.sprite.spritecollide(sprite, group, False, collide_hit_rect)
+        #print(hits)
         if hits:
             #If the collider is to the right, put the object on its left.
             if hits[0].rect.centerx > sprite.hit_rect.centerx:
@@ -46,9 +47,10 @@ def collide_walls(sprite, group, dir):
             sprite.hit_rect.centery = sprite.pos.y
 
 #Checks for x/y collision
-def collideDir(sprite, group):
+def collideBox(sprite, group):
     hits = pg.sprite.spritecollide(sprite, group, False, collide_hit_rect)
     if hits:
+        print(hits)
         #Distance of the main sprite to the detected collider, centered on the collider
         distanceRight = sprite.hit_rect.centerx - hits[0].rect.centerx
         distanceDown = sprite.hit_rect.centery - hits[0].rect.centery
@@ -65,7 +67,7 @@ def collideDir(sprite, group):
             return "down", hits[0]
     return "none", "none"
 
-
+"""
 def collide_walls(sprite, group):
     dirCardinal,wall = collideDir(sprite, group)
     match dirCardinal:
@@ -85,12 +87,12 @@ def collide_walls(sprite, group):
             sprite.pos.y = wall.rect.bottom + sprite.hit_rect.height / 2
             sprite.vel.y = 0
             sprite.hit_rect.centery = sprite.pos.y
-
+"""
 
 class Player(Sprite):
     def __init__(self, game, x, y):
         #Adding to sprites -> draw
-        self.groups = game.all_sprites
+        self.groups = game.all_sprites, game.theplayer
         Sprite.__init__(self, self.groups)
         self.game = game
 
@@ -199,16 +201,18 @@ class Player(Sprite):
         self.pos += self.vel * self.game.dt
         
         self.hit_rect.centery = self.pos.y
-        self.hit_rect.centerx = self.pos.x
-
-        self.hit_rect.centery = self.pos.y
         collide_walls(self, self.game.all_walls, 'y')
         self.hit_rect.centerx = self.pos.x
         collide_walls(self, self.game.all_walls, 'x')
+        self.rect.center = self.hit_rect.center
+
+        #collideBox(self, self.game.all_boxes)
+
         #collide_walls(self, self.game.all_walls)
 
         for colliders in pg.sprite.spritecollide(self, self.game.all_walls, False):
-            print("collided with " + str(colliders))
+            #print("collided with " + str(colliders))
+            pass
 
 
 
@@ -242,8 +246,12 @@ class Box(Sprite):
         self.rect = self.image.get_rect()
         self.vel = vec(0,0)
         self.pos = vec(x,y) * TILESIZE
+        print(self.pos)
         self.hit_rect = PLAYER_HIT_RECT
-
+        self.rect.center = self.pos
+        
+    def update(self, *args, **kwargs):
+        collideBox(self, self.game.theplayer)
 
 
 

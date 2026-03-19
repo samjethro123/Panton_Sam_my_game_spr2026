@@ -40,6 +40,7 @@ class Game:
     def new(self):
         #Starts the game
         #Creating every group, so that we could access all of a certain type of object.
+        self.theplayer = pg.sprite.Group()
         self.all_sprites = pg.sprite.Group()
         self.all_walls = pg.sprite.Group()
         self.all_mobs = pg.sprite.Group()
