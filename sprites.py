@@ -11,7 +11,12 @@ vec = pg.math.Vector2
 
 #Returns a bool depending on whether two objects are colliding
 def collide_hit_rect(one, two):
-    return one.hit_rect.colliderect(two.rect)
+    if one.hit_rect != None:
+        return one.hit_rect.colliderect(two.rect)
+    elif two.hit_rect != None:
+        return one.rect.colliderect(two.hit_rect)
+    else:
+        return "something bad happened"
 
 def collide_walls(sprite, group, dir):
     #Stops movement in x direction
@@ -47,25 +52,37 @@ def collide_walls(sprite, group, dir):
             sprite.hit_rect.centery = sprite.pos.y
 
 #Checks for x/y collision
-def collideBox(sprite, group):
-    hits = pg.sprite.spritecollide(sprite, group, False, collide_hit_rect)
-    if hits:
-        print(hits)
-        #Distance of the main sprite to the detected collider, centered on the collider
-        distanceRight = sprite.hit_rect.centerx - hits[0].rect.centerx
-        distanceDown = sprite.hit_rect.centery - hits[0].rect.centery
-        distanceLeft = hits[0].rect.centerx - sprite.hit_rect.centerx
-        distanceUp = hits[0].rect.centery - sprite.hit_rect.centery
+def collideBox(box, pusher, dir):
+    boxHits = pg.sprite.spritecollide(box, pusher, False, collide_hit_rect)
+    if boxHits:
 
-        if distanceRight > distanceLeft and distanceRight > distanceDown and distanceRight > distanceUp:
-            return "left", hits[0]
-        if distanceDown > distanceRight and distanceDown > distanceLeft and distanceDown > distanceUp:
-            return "up", hits[0]
-        if distanceLeft > distanceRight and distanceLeft > distanceDown and distanceLeft > distanceUp:
-            return "right", hits[0]
-        if distanceUp > distanceRight and distanceUp > distanceDown and distanceUp > distanceLeft:
-            return "down", hits[0]
-    return "none", "none"
+        #print(hits)
+        #Distance of the player to the box, centered on the player
+
+
+        distanceRight = box.rect.centerx - boxHits[0].hit_rect.centerx
+        distanceDown = box.rect.centery - boxHits[0].hit_rect.centery
+        distanceLeft = boxHits[0].hit_rect.centerx - box.rect.centerx
+        distanceUp = boxHits[0].hit_rect.centery - box.rect.centery
+
+        #print("right: " + str(distanceRight) + " down: " + str(distanceDown) + " left: " + str(distanceLeft) + " up: " + str(distanceUp))
+
+        if distanceRight > distanceLeft and distanceRight > distanceDown and distanceRight > distanceUp and dir == "x":
+            box.pos.x = boxHits[0].rect.left + 48
+            return "left", boxHits[0]
+        if distanceDown > distanceRight and distanceDown > distanceLeft and distanceDown > distanceUp and dir == "y":
+            box.pos.y = boxHits[0].rect.top + 48
+            return "up", boxHits[0]
+        if distanceLeft > distanceRight and distanceLeft > distanceDown and distanceLeft > distanceUp and dir == "x":
+            box.pos.x = boxHits[0].rect.right - 48
+            return "right", boxHits[0]
+        if distanceUp > distanceRight and distanceUp > distanceDown and distanceUp > distanceLeft and dir == "y":
+            box.pos.y = boxHits[0].rect.bottom - 48
+            return "down", boxHits[0]
+        else:
+            return "i have no clue whats happening"
+    else:
+        return "none", "none"
 
 """
 def collide_walls(sprite, group):
@@ -246,12 +263,16 @@ class Box(Sprite):
         self.rect = self.image.get_rect()
         self.vel = vec(0,0)
         self.pos = vec(x,y) * TILESIZE
+        self.hit_rect = None
         print(self.pos)
-        self.hit_rect = PLAYER_HIT_RECT
         self.rect.center = self.pos
         
     def update(self, *args, **kwargs):
-        collideBox(self, self.game.theplayer)
+        collideBox(self, self.game.theplayer, "x")
+        collideBox(self, self.game.theplayer, "y")
+
+        self.rect.center = self.pos
+        #print(self.game.theplayer)
 
 
 
@@ -276,6 +297,7 @@ class Wall(Sprite):
         self.groups = game.all_sprites, game.all_walls
         Sprite.__init__(self, self.groups)
         self.game = game
+
         self.image = game.wall_img
         self.rect = self.image.get_rect()
         self.pos = vec(x,y) * TILESIZE
