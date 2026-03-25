@@ -11,100 +11,51 @@ vec = pg.math.Vector2
 
 #Returns a bool depending on whether two objects are colliding
 def collide_hit_rect(one, two):
+    return one.rect.colliderect(two.rect)
+    '''
     if one.hit_rect != None:
         return one.hit_rect.colliderect(two.rect)
     elif two.hit_rect != None:
         return one.rect.colliderect(two.hit_rect)
     else:
         return "something bad happened"
+    '''
 
 def collide_walls(sprite, group, dir):
+
+    #Returns direction of collision, collider, distance between the centers in the direction stated
+
+    #Polymorphed to support other collisions
+
     #Stops movement in x direction
     if dir == 'x':
         #Identifies the collider 
         hits = pg.sprite.spritecollide(sprite, group, False, collide_hit_rect)
         #print(hits)
         if hits:
-            #If the collider is to the right, put the object on its left.
-            if hits[0].rect.centerx > sprite.hit_rect.centerx:
-                sprite.pos.x = hits[0].rect.left - sprite.hit_rect.width / 2
-
-            #If the collider is to the left, put the object on the right
-            if hits[0].rect.centerx < sprite.hit_rect.centerx:
-                sprite.pos.x = hits[0].rect.right + sprite.hit_rect.width / 2
-
-            sprite.vel.x = 0
-            sprite.hit_rect.centerx = sprite.pos.x
-
+            #If the collider is to the right
+            if hits[0].rect.centerx > sprite.rect.centerx:
+                return "right", hits[0], hits[0].rect.centerx - sprite.rect.centerx
+            
+            #If the collider is to the left
+            if hits[0].rect.centerx < sprite.rect.centerx:
+                return "left", hits[0], sprite.rect.centerx - hits[0].rect.centerx
     #Stop movement in y direction
     if dir == 'y':
         hits = pg.sprite.spritecollide(sprite, group, False, collide_hit_rect)
         if hits:
-            #If the collider is below it, put the object on top.
-            if hits[0].rect.centery > sprite.hit_rect.centery:
-                sprite.pos.y = hits[0].rect.top - sprite.hit_rect.width / 2
 
-            #If the collider is on top of it, put the object on the bottom
-            if hits[0].rect.centery < sprite.hit_rect.centery:
-                sprite.pos.y = hits[0].rect.bottom + sprite.hit_rect.width / 2
+            #If the collider is below it
+            if hits[0].rect.centery > sprite.rect.centery:
+                return "down", hits[0], hits[0].rect.centery - sprite.rect.centery
+            
+            #If the collider is on top of it
+            if hits[0].rect.centery < sprite.rect.centery:
+                return "up", hits[0], sprite.rect.centery - hits[0].rect.centery
 
-            sprite.vel.y = 0
-            sprite.hit_rect.centery = sprite.pos.y
-
-#Checks for x/y collision
-def collideBox(box, pusher, dir):
-    boxHits = pg.sprite.spritecollide(box, pusher, False, collide_hit_rect)
-    if boxHits:
-
-        #print(hits)
-        #Distance of the player to the box, centered on the player
+    return None, None, None
 
 
-        distanceRight = box.rect.centerx - boxHits[0].hit_rect.centerx
-        distanceDown = box.rect.centery - boxHits[0].hit_rect.centery
-        distanceLeft = boxHits[0].hit_rect.centerx - box.rect.centerx
-        distanceUp = boxHits[0].hit_rect.centery - box.rect.centery
-
-        #print("right: " + str(distanceRight) + " down: " + str(distanceDown) + " left: " + str(distanceLeft) + " up: " + str(distanceUp))
-
-        if distanceRight > distanceLeft and distanceRight > distanceDown and distanceRight > distanceUp and dir == "x":
-            box.pos.x = boxHits[0].rect.left + 48
-            return "left", boxHits[0]
-        if distanceDown > distanceRight and distanceDown > distanceLeft and distanceDown > distanceUp and dir == "y":
-            box.pos.y = boxHits[0].rect.top + 48
-            return "up", boxHits[0]
-        if distanceLeft > distanceRight and distanceLeft > distanceDown and distanceLeft > distanceUp and dir == "x":
-            box.pos.x = boxHits[0].rect.right - 48
-            return "right", boxHits[0]
-        if distanceUp > distanceRight and distanceUp > distanceDown and distanceUp > distanceLeft and dir == "y":
-            box.pos.y = boxHits[0].rect.bottom - 48
-            return "down", boxHits[0]
-        else:
-            return "i have no clue whats happening"
-    else:
-        return "none", "none"
-
-"""
-def collide_walls(sprite, group):
-    dirCardinal,wall = collideDir(sprite, group)
-    match dirCardinal:
-        case "right":
-            sprite.pos.x = wall.rect.left - sprite.hit_rect.width / 2
-            sprite.vel.x = 0
-            sprite.hit_rect.centerx = sprite.pos.x
-        case "left":
-            sprite.pos.x = wall.rect.right + sprite.hit_rect.width / 2
-            sprite.vel.x = 0
-            sprite.hit_rect.centerx = sprite.pos.x
-        case "down":
-            sprite.pos.y = wall.rect.top - sprite.hit_rect.height / 2
-            sprite.vel.y = 0
-            sprite.hit_rect.centery = sprite.pos.y
-        case "up":
-            sprite.pos.y = wall.rect.bottom + sprite.hit_rect.height / 2
-            sprite.vel.y = 0
-            sprite.hit_rect.centery = sprite.pos.y
-"""
 
 class Player(Sprite):
     def __init__(self, game, x, y):
@@ -214,14 +165,34 @@ class Player(Sprite):
         #Syncing the object with the sprite
         self.rect.center = self.pos 
 
+        self.hit_rect.centery = self.pos.y
+        pushDirY = collide_walls(self, self.game.all_walls, 'y')
+
+        #If collision in y direction, move player to correct edge of wall and stop y movement
+        if pushDirY[0] != None:
+            if pushDirY[0] == "down":
+                self.pos.y = pushDirY[1].rect.top - self.hit_rect.height / 2
+            if pushDirY[0] == "up":
+                self.pos.y = pushDirY[1].rect.bottom + self.hit_rect.height / 2
+            self.vel.y = 0
+            self.hit_rect.centery = self.pos.y
+
+        self.hit_rect.centerx = self.pos.x
+        pushDirX = collide_walls(self, self.game.all_walls, 'x')
+
+        #If collision in x direction, move player to correct edge of wall and stop x movement 
+        if pushDirX[0] != None:
+            if pushDirX[0] == "right":
+                self.pos.x = pushDirX[1].rect.left - self.hit_rect.width / 2
+            if pushDirX[0] == "left":
+                self.pos.x = pushDirX[1].rect.right + self.hit_rect.width / 2
+            self.vel.x = 0
+            self.hit_rect.centerx = self.pos.x
+
+        self.rect.center = self.hit_rect.center
+
         #Vector movement
         self.pos += self.vel * self.game.dt
-        
-        self.hit_rect.centery = self.pos.y
-        collide_walls(self, self.game.all_walls, 'y')
-        self.hit_rect.centerx = self.pos.x
-        collide_walls(self, self.game.all_walls, 'x')
-        self.rect.center = self.hit_rect.center
 
         #collideBox(self, self.game.all_boxes)
 
@@ -268,8 +239,45 @@ class Box(Sprite):
         self.rect.center = self.pos
         
     def update(self, *args, **kwargs):
-        collideBox(self, self.game.theplayer, "x")
-        collideBox(self, self.game.theplayer, "y")
+
+        pushingDirX = collide_walls(self, self.game.theplayer, "x")
+        pushingDirY = collide_walls(self, self.game.theplayer, "y")
+
+        if pushingDirX != (None, None, None) and pushingDirY != (None, None, None):
+            if pushingDirX[2] > pushingDirY[2]:
+                if pushingDirX[0] == "right":
+                    self.vel.x = -PLAYER_SPEED
+                if pushingDirX[0] == "left":
+                    self.vel.x = PLAYER_SPEED
+            else:
+                if pushingDirY[0] == "down":
+                    self.vel.y = -PLAYER_SPEED
+                if pushingDirY[0] == "up":
+                    self.vel.y = PLAYER_SPEED
+        else:
+            self.vel = vec(0,0)
+
+
+        pushDirY = collide_walls(self, self.game.all_walls, 'y')
+
+        #If collision in y direction, move player to correct edge of wall and stop y movement
+        if pushDirY[0] != None:
+            if pushDirY[0] == "down":
+                self.pos.y = pushDirY[1].rect.top - self.rect.height / 2
+            if pushDirY[0] == "up":
+                self.pos.y = pushDirY[1].rect.bottom + self.rect.height / 2
+
+        pushDirX = collide_walls(self, self.game.all_walls, 'x')
+
+        #If collision in x direction, move player to correct edge of wall and stop x movement 
+        if pushDirX[0] != None:
+            if pushDirX[0] == "right":
+                self.pos.x = pushDirX[1].rect.left - self.rect.width / 2
+            if pushDirX[0] == "left":
+                self.pos.x = pushDirX[1].rect.right + self.rect.width / 2
+
+        self.pos += self.vel * self.game.dt
+
 
         self.rect.center = self.pos
         #print(self.game.theplayer)
