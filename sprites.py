@@ -2,6 +2,7 @@
 from unittest import case
 
 import pygame as pg
+from pygame import sprite
 from pygame.sprite import Sprite
 from settings import *
 from os import path
@@ -9,20 +10,31 @@ from utils import *
 
 vec = pg.math.Vector2
 
+'''
+def futureMovement(center, centerVel, collider):
+
+    testRect = center.hit_rect.copy()
+
+
+    testRect.pos = center.pos + centerVel * center.game.dt
+    
+    if testRect.colliderect(collider):
+        return True
+    return False
+'''
 #Returns a bool depending on whether two objects are colliding
 def collide_hit_rect(one, two):
-    return one.rect.colliderect(two.rect)
-    '''
-    if one.hit_rect != None:
+    if one.hit_rect != None and two.hit_rect != None:
+        return one.hit_rect.colliderect(two.hit_rect)
+    elif one.hit_rect != None:
         return one.hit_rect.colliderect(two.rect)
     elif two.hit_rect != None:
         return one.rect.colliderect(two.hit_rect)
     else:
-        return "something bad happened"
-    '''
+        return one.rect.colliderect(two.rect)
+
 
 def collide_walls(sprite, group, dir):
-
     #Returns direction of collision, collider, distance between the centers in the direction stated
 
     #Polymorphed to support other collisions
@@ -40,11 +52,11 @@ def collide_walls(sprite, group, dir):
             #If the collider is to the left
             if hits[0].rect.centerx < sprite.rect.centerx:
                 return "left", hits[0], sprite.rect.centerx - hits[0].rect.centerx
+            
     #Stop movement in y direction
     if dir == 'y':
         hits = pg.sprite.spritecollide(sprite, group, False, collide_hit_rect)
         if hits:
-
             #If the collider is below it
             if hits[0].rect.centery > sprite.rect.centery:
                 return "down", hits[0], hits[0].rect.centery - sprite.rect.centery
@@ -55,6 +67,16 @@ def collide_walls(sprite, group, dir):
 
     return None, None, None
 
+def collide_wall_point(point, dir):
+    pass
+
+def collide_box(player, boxes, dir):
+    collided = collide_walls(player, boxes, dir)
+    if collided[0] != None:
+        if dir == 'x':
+            if collided == "right":
+                futurePoint = collided[1].topright + PLAYER_SPEED * player.game.dt
+                
 
 
 class Player(Sprite):
@@ -75,7 +97,8 @@ class Player(Sprite):
         self.image.fill(WHITE)
         self.rect = self.image.get_rect()
         self.vel = vec(0,0)
-        self.pos = vec(x,y) * TILESIZE
+        self.pos = vec(x,y) * TILESIZE 
+
         self.hit_rect = PLAYER_HIT_RECT
 
         #Attributes for animation
@@ -155,55 +178,154 @@ class Player(Sprite):
                 self.rect = self.image.get_rect()
                 self.rect.bottom = bottom
 
-    def update(self):
+    '''
+    Flow of player movement:
+    1. Detect if player has pressed a key, then move the hitbox if so
+    2. Check if hitbox collides with wall, if so move player to edge of wall
+    3. Draw the player
+    '''
+
+    def update(self, updateType):
+        if updateType == "movement":
         #changes self.vel direction depending on key pressed
-        self.get_keys()
+            self.get_keys()
+            self.pos += self.vel * self.game.dt
 
-        #updates to next frame depending on state, only every 1000 ticks
-        self.animate(IDLE_RATE, WALKING_RATE)
+            #updates to next frame depending on state, only every 1000 ticks
+            self.animate(IDLE_RATE, WALKING_RATE)
 
-        #Syncing the object with the sprite
-        self.rect.center = self.pos 
+            #Syncing the hitbox with the sprite
+            self.hit_rect.center = self.pos
+        
+        if updateType == "collisions":
+            pushDirY = collide_walls(self, self.game.all_walls, 'y')
 
-        self.hit_rect.centery = self.pos.y
+            #If collision in y direction, move player to correct edge of wall and stop y movement
+            if pushDirY[0] != None:
+                if pushDirY[0] == "down":
+                    self.pos.y = pushDirY[1].rect.top - self.hit_rect.height / 2
+                if pushDirY[0] == "up":
+                    self.pos.y = pushDirY[1].rect.bottom + self.hit_rect.height / 2
+                self.vel.y = 0
+                self.hit_rect.centery = self.pos.y
+
+            self.hit_rect.centerx = self.pos.x
+            pushDirX = collide_walls(self, self.game.all_walls, 'x')
+
+            #If collision in x direction, move player to correct edge of wall and stop x movement 
+            if pushDirX[0] != None:
+                if pushDirX[0] == "right":
+                    self.pos.x = pushDirX[1].rect.left - self.hit_rect.width / 2
+                if pushDirX[0] == "left":
+                    print("left collision")
+                    self.pos.x = pushDirX[1].rect.right + self.hit_rect.width / 2
+                self.vel.x = 0
+                self.hit_rect.centerx = self.pos.x
+        if updateType == "final":
+            self.rect.center = self.hit_rect.center
+            
+class Box(Sprite):
+    def __init__(self, game, x, y):
+        self.game = game
+
+        #all_boxes is for anything that could be pushed
+        self.groups = game.all_sprites, game.all_boxes
+
+        Sprite.__init__(self, self.groups)
+
+        self.image = pg.Surface((TILESIZE, TILESIZE))
+        self.image.fill(RED)
+        self.rect = self.image.get_rect()
+        self.vel = vec(0,0)
+
+        self.pos = vec(x,y) * TILESIZE
+        self.hit_rect = pg.Rect(0,0,TILESIZE,TILESIZE)
+
+        self.rect.center = self.pos
+        
+    def update(self, *args, **kwargs):
+
+        self.interpos = self.pos    
+
+        #Player pushing box
+
+        pushingDirX = collide_walls(self, self.game.theplayer, "x")
+        pushingDirY = collide_walls(self, self.game.theplayer, "y")
+
+        if pushingDirX != (None, None, None) and pushingDirY != (None, None, None):
+            #If pushing in x dir
+            if pushingDirX[2] > pushingDirY[2]:
+                if pushingDirX[0] == "right":
+                    self.vel.x = -PLAYER_SPEED
+                elif pushingDirX[0] == "left":
+                    self.vel.x = PLAYER_SPEED
+
+                self.interpos += self.vel * self.game.dt
+                self.hit_rect.center = self.interpos
+
+                wallDirX = collide_walls(self, self.game.all_walls, 'x')
+
+                if wallDirX[0] != None:
+                    self.vel.x = 0
+                    print('vel stopped')
+
+            #If pushing in y dir
+            else:
+                if pushingDirY[0] == "down":
+                    self.vel.y = -PLAYER_SPEED
+                elif pushingDirY[0] == "up":
+                    self.vel.y = PLAYER_SPEED
+
+                self.interpos = self.pos + self.vel * self.game.dt
+                self.hit_rect.center = self.interpos
+
+                wallDirY = collide_walls(self, self.game.all_walls, 'y')
+
+                if wallDirY[0] != None:
+                    self.vel.y = 0
+
+        else:
+            self.vel = vec(0,0)
+
+        '''
+
+        #box hitbox is updated to detect wall collisions
+        self.pos += self.vel * self.game.dt
+        self.hit_rect.center = self.pos
+
         pushDirY = collide_walls(self, self.game.all_walls, 'y')
+
+        #Pushed into wall check
 
         #If collision in y direction, move player to correct edge of wall and stop y movement
         if pushDirY[0] != None:
             if pushDirY[0] == "down":
-                self.pos.y = pushDirY[1].rect.top - self.hit_rect.height / 2
+                self.pos.y = pushDirY[1].rect.top - self.rect.height / 2
             if pushDirY[0] == "up":
-                self.pos.y = pushDirY[1].rect.bottom + self.hit_rect.height / 2
+                self.pos.y = pushDirY[1].rect.bottom + self.rect.height / 2
             self.vel.y = 0
-            self.hit_rect.centery = self.pos.y
 
-        self.hit_rect.centerx = self.pos.x
         pushDirX = collide_walls(self, self.game.all_walls, 'x')
 
         #If collision in x direction, move player to correct edge of wall and stop x movement 
         if pushDirX[0] != None:
             if pushDirX[0] == "right":
-                self.pos.x = pushDirX[1].rect.left - self.hit_rect.width / 2
+                self.pos.x = pushDirX[1].rect.left - self.rect.width / 2
             if pushDirX[0] == "left":
-                self.pos.x = pushDirX[1].rect.right + self.hit_rect.width / 2
+                self.pos.x = pushDirX[1].rect.right + self.rect.width / 2
             self.vel.x = 0
-            self.hit_rect.centerx = self.pos.x
 
-        self.rect.center = self.hit_rect.center
+        '''
 
-        #Vector movement
+        if self.vel.x != 0:
+            print('moving')
+        
         self.pos += self.vel * self.game.dt
 
-        #collideBox(self, self.game.all_boxes)
+        self.rect.center = self.pos
+        self.hit_rect.center = self.pos
 
-        #collide_walls(self, self.game.all_walls)
-
-        for colliders in pg.sprite.spritecollide(self, self.game.all_walls, False):
-            #print("collided with " + str(colliders))
-            pass
-
-
-
+#not built upon yet
 class Projectile(Sprite):
     def __init__(self, game, x, y):
         self.groups = game.all_sprites, game.all_projectiles
@@ -223,63 +345,6 @@ class Projectile(Sprite):
 
 
 
-class Box(Sprite):
-    def __init__(self, game, x, y):
-        self.game = game
-        self.groups = game.all_sprites, game.all_boxes
-        Sprite.__init__(self, self.groups)
-
-        self.image = pg.Surface((TILESIZE, TILESIZE))
-        self.image.fill(RED)
-        self.rect = self.image.get_rect()
-        self.vel = vec(0,0)
-        self.pos = vec(x,y) * TILESIZE
-        self.hit_rect = None
-        print(self.pos)
-        self.rect.center = self.pos
-        
-    def update(self, *args, **kwargs):
-
-        pushingDirX = collide_walls(self, self.game.theplayer, "x")
-        pushingDirY = collide_walls(self, self.game.theplayer, "y")
-
-        if pushingDirX != (None, None, None) and pushingDirY != (None, None, None):
-            if pushingDirX[2] > pushingDirY[2]:
-                if pushingDirX[0] == "right":
-                    self.vel.x = -PLAYER_SPEED
-                if pushingDirX[0] == "left":
-                    self.vel.x = PLAYER_SPEED
-            else:
-                if pushingDirY[0] == "down":
-                    self.vel.y = -PLAYER_SPEED
-                if pushingDirY[0] == "up":
-                    self.vel.y = PLAYER_SPEED
-        else:
-            self.vel = vec(0,0)
-
-
-        pushDirY = collide_walls(self, self.game.all_walls, 'y')
-
-        #If collision in y direction, move player to correct edge of wall and stop y movement
-        if pushDirY[0] != None:
-            if pushDirY[0] == "down":
-                self.pos.y = pushDirY[1].rect.top - self.rect.height / 2
-            if pushDirY[0] == "up":
-                self.pos.y = pushDirY[1].rect.bottom + self.rect.height / 2
-
-        pushDirX = collide_walls(self, self.game.all_walls, 'x')
-
-        #If collision in x direction, move player to correct edge of wall and stop x movement 
-        if pushDirX[0] != None:
-            if pushDirX[0] == "right":
-                self.pos.x = pushDirX[1].rect.left - self.rect.width / 2
-            if pushDirX[0] == "left":
-                self.pos.x = pushDirX[1].rect.right + self.rect.width / 2
-
-        self.pos += self.vel * self.game.dt
-
-
-        self.rect.center = self.pos
         #print(self.game.theplayer)
 
 
@@ -310,6 +375,7 @@ class Wall(Sprite):
         self.rect = self.image.get_rect()
         self.pos = vec(x,y) * TILESIZE
         self.rect.center = self.pos
+        self.hit_rect = None
     def update(self):
         hits = pg.sprite.spritecollide(self, self.game.all_mobs, False)
 

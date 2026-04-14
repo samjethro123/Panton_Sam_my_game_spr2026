@@ -15,6 +15,8 @@ PLAYER_HIT_RECT = pg.Rect(0,0,TILESIZE,TILESIZE)
 IDLE_RATE = 1000
 WALKING_RATE = 1
 
+#Hidden mobs
+
 #Color Values
 #tuples storing rbg values
 BLUE = (0, 0, 255) #bg

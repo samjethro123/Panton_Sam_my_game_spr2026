@@ -85,7 +85,11 @@ class Game:
         pass
 
     def update(self):
-        self.all_sprites.update()
+        
+        self.player.update('movement')
+        self.all_boxes.update()
+        self.player.update('collisions')
+        self.player.update('final')
 
     def draw(self):
         #BG color
