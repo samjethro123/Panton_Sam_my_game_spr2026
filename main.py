@@ -45,6 +45,7 @@ class Game:
         self.all_walls = pg.sprite.Group()
         self.all_mobs = pg.sprite.Group()
         self.all_boxes = pg.sprite.Group()
+        self.nonBox = pg.sprite.Group()
 
         self.load_data()
         for row,tiles in enumerate(self.map.data):
@@ -85,10 +86,31 @@ class Game:
         pass
 
     def update(self):
+
+        '''
+        Order of movements:
         
-        self.player.update('movement')
-        self.all_boxes.update()
-        self.player.update('collisions')
+        X direction movement
+         Player moves
+         Boxes collide with everything
+         Player collide with walls and boxes
+
+        Y direction movement
+         Player moves
+         Boxes collide with everything
+         Player collide with walls and boxes
+
+        Draw sprites
+        '''
+
+        self.player.update('movementX')
+        self.all_boxes.update('collisionsX')
+        self.player.update('collisionsX')
+
+        self.player.update('movementY')
+        self.all_boxes.update('collisionsY')
+        self.player.update('collisionsY')
+
         self.player.update('final')
 
     def draw(self):
