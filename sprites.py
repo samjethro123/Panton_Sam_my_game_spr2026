@@ -45,8 +45,6 @@ def collide_walls(sprite, spriteRect, group, dir):
         hits = pg.sprite.spritecollide(sprite, group, False, collide_hit_rect)
         #print(hits)
         if hits:
-            print(sprite, hits[0])
-            print(spriteRect.centerx, hits[0].rect.centerx)
             #If the collider is to the right
             if hits[0].rect.centerx > spriteRect.centerx:
                 return "right", hits[0], hits[0].rect.centerx - spriteRect.centerx
@@ -85,6 +83,7 @@ class Player(Sprite):
         self.groups = game.all_sprites, game.theplayer
         Sprite.__init__(self, self.groups)
         self.game = game
+        
 
         #loading animated attributes
         self.standingsheet = SpriteSheet(path.join(self.game.img_dir, "sprite_sheet.png"))
@@ -220,16 +219,17 @@ class Player(Sprite):
                 self.vel.x = 0
                 self.hit_rect.centerx = self.pos.x
 
-        if updateType == "final":
+        if updateType == "updateSprite":
             self.rect.center = self.pos
         
             
 class Box(Sprite):
-    def __init__(self, game, x, y):
+    def __init__(self, game, x, y, _layer):
+        self._layer = _layer
         self.game = game
 
         #all_boxes is for anything that could be pushed
-        self.groups = game.all_sprites, game.all_boxes, game.all_walls
+        self.groups = game.all_boxes, game.all_walls, game.all_sprites
 
         Sprite.__init__(self, self.groups)
 
@@ -268,8 +268,19 @@ class Box(Sprite):
                     self.pos.x = pushDirX[1].rect.right + self.hit_rect.width / 2
                 self.vel.x = 0
 
-            self.rect.centerx = self.pos.x
             self.hit_rect.centerx = self.pos.x
+
+            #Box Magnet collision
+            magDirX = collide_walls(self, self.hit_rect, self.game.all_mags, 'x')
+            if magDirX[2] != 0 and magDirX[0] != None:
+                if magDirX[2] > MAG_STRENGTH:
+                    if magDirX[0] == "right":
+                        self.pos.x += MAG_STRENGTH
+                    if magDirX[0] == "left":
+                        self.pos.x += -MAG_STRENGTH
+                else:
+                    self.pos.x = magDirX[1].rect.centerx
+                self.hit_rect.centerx = self.pos.x
         
         if updateType == 'collisionsY':
 
@@ -295,8 +306,43 @@ class Box(Sprite):
                     self.pos.y = pushDirY[1].rect.bottom + self.hit_rect.height / 2
                 self.vel.y = 0
 
-            self.rect.centery = self.pos.y
             self.hit_rect.centery = self.pos.y
+
+            #Box Magnet detection
+            magDirY = collide_walls(self, self.hit_rect, self.game.all_mags, 'y')
+            if magDirY[2] != 0 and magDirY[0] != None:
+                if magDirY[2] > MAG_STRENGTH:
+                    if magDirY[0] == "down":
+                        self.pos.y += MAG_STRENGTH
+                    if magDirY[0] == "up":
+                        self.pos.y += -MAG_STRENGTH
+                else:
+                    self.pos.y = magDirY[1].rect.centery
+                self.hit_rect.centery = self.pos.y
+
+        if updateType == 'updateSprite':
+            self.rect.center = self.pos
+            
+class Magnet(Sprite):
+    def __init__(self, game, x, y, _layer):
+
+        self._layer = _layer
+        self.groups = game.all_sprites, game.all_mags
+        Sprite.__init__(self, self.groups)
+        self.game = game
+        self.image = pg.Surface((TILESIZE, TILESIZE))
+        self.image.fill(BLACK)
+        self.rect = self.image.get_rect()
+        self.vel = vec(0,0)
+        self.pos = vec(x,y) * TILESIZE
+        self.rect.center = self.pos
+        self.hit_rect = pg.Rect(0,0,TILESIZE,TILESIZE)
+        self.hit_rect.center = self.pos
+
+        print("mag cent" + str(self.pos))
+
+    def update(self, updateType):
+        pass
 
 #not built upon yet
 class Projectile(Sprite):
@@ -311,7 +357,7 @@ class Projectile(Sprite):
         self.pos = vec(x,y)
     def movement(self):
         pass
-    def update(self):
+    def update(self, updateType):
         hits = pg.sprite.spritecollide(self, self.game.all_walls, False)
         if hits:
             print(hits)
@@ -334,7 +380,7 @@ class Object(Sprite):
         self.rect = self.image.get_rect()
         self.pos = vec(x,y) * TILESIZE
         self.rect.center = self.pos
-    def update(self):
+    def update(self, updateType):
         pass
 
 class Wall(Sprite):
@@ -349,7 +395,7 @@ class Wall(Sprite):
         self.pos = vec(x,y) * TILESIZE
         self.rect.center = self.pos
         self.hit_rect = None
-    def update(self):
+    def update(self, updateType):
         hits = pg.sprite.spritecollide(self, self.game.all_mobs, False)
 
 class Coin(Sprite):
@@ -363,7 +409,7 @@ class Coin(Sprite):
         self.vel = vec(0, 0)
         self.pos = vec(x,y) * TILESIZE
         self.rect.center = self.pos
-    def update(self):
+    def update(self, updateType):
         hits = pg.sprite.spritecollide(self, self.game.all_mobs, False)
 
         
@@ -380,7 +426,7 @@ class Mob(Sprite):
         self.pos = vec(x,y) * TILESIZE
     def movement(self):
         pass
-    def update(self):
+    def update(self, updateType):
         hits = pg.sprite.spritecollide(self, self.game.all_walls, False)
         if hits:
             print(hits)

@@ -11,6 +11,9 @@ TILESIZE = 32
 PLAYER_SPEED = 280
 PLAYER_HIT_RECT = pg.Rect(0,0,TILESIZE,TILESIZE)
 
+#Object Settings
+MAG_STRENGTH = 2
+
 #Framerate for animations
 IDLE_RATE = 1000
 WALKING_RATE = 1

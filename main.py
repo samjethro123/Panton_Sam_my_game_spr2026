@@ -41,11 +41,13 @@ class Game:
         #Starts the game
         #Creating every group, so that we could access all of a certain type of object.
         self.theplayer = pg.sprite.Group()
-        self.all_sprites = pg.sprite.Group()
+        self.all_sprites = pg.sprite.LayeredUpdates()
         self.all_walls = pg.sprite.Group()
         self.all_mobs = pg.sprite.Group()
         self.all_boxes = pg.sprite.Group()
+        self.all_mags = pg.sprite.Group()
         self.nonBox = pg.sprite.Group()
+
 
         self.load_data()
         for row,tiles in enumerate(self.map.data):
@@ -56,7 +58,13 @@ class Game:
                 if tile == 'P':
                     self.player = Player(self, col, row)
                 if tile == 'B':
-                    self.box = Box(self, col, row)
+                    Box(self, col, row, 2)
+                if tile == 'M':
+                    Magnet(self, col, row, 1)
+
+        print(self.theplayer.sprites())
+
+
         #Telling the game to run
         self.run()
 
@@ -80,6 +88,7 @@ class Game:
                 #print(event.pos)
             if event.type == pg.KEYDOWN:
                 self.player.get_keys()
+    
 
 
     def quit(self):
@@ -89,7 +98,7 @@ class Game:
 
         '''
         Order of movements:
-        
+
         X direction movement
          Player moves
          Boxes collide with everything
@@ -111,17 +120,22 @@ class Game:
         self.all_boxes.update('collisionsY')
         self.player.update('collisionsY')
 
-        self.player.update('final')
+        self.all_sprites.update('updateSprite')
 
     def draw(self):
         #BG color
         self.screen.fill(BLUE)
 
         #Writing texts
+
+        '''
         self.draw_text("Hello World", 24, WHITE, WIDTH/2, TILESIZE)
         self.draw_text(str(self.dt), 24, WHITE, WIDTH/2, HEIGHT/4)
         self.draw_text(str(self.game_cooldown.time), 24, WHITE, WIDTH/2, HEIGHT/2)
         self.draw_text(str(self.player.pos), 24, WHITE, WIDTH/2, HEIGHT/1.5)
+        '''
+
+        self.draw_text(str())
 
         #Drawing objects
         self.all_sprites.draw(self.screen)
