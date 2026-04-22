@@ -25,8 +25,8 @@ class Game:
         #starting the game
         self.running = True      
         self.playing = True
-        self.game_cooldown = Cooldown(3000)
-        self.game_cooldown.start()
+
+        self.viewWinCon = False
 
     #a method is a function tied to a Class
 
@@ -35,13 +35,15 @@ class Game:
         self.game_dir = path.dirname(__file__)
         self.img_dir = path.join(self.game_dir, 'images')
         self.wall_img = pg.image.load(path.join(self.img_dir, 'WallSprite.png'))
-        self.map = Map(path.join(self.game_dir, 'level1.txt'))
+        self.map = Map(path.join(self.game_dir, 'level1.txt'), False)
+        self.winMap = Map(path.join(self.game_dir, 'level1win.txt'), False)
 
     def new(self):
         #Starts the game
         #Creating every group, so that we could access all of a certain type of object.
         self.theplayer = pg.sprite.Group()
         self.all_sprites = pg.sprite.LayeredUpdates()
+        self.winSprite = pg.sprite.LayeredUpdates()
         self.all_walls = pg.sprite.Group()
         self.all_mobs = pg.sprite.Group()
         self.all_boxes = pg.sprite.Group()
@@ -50,19 +52,23 @@ class Game:
 
 
         self.load_data()
+        #For the regular map
         for row,tiles in enumerate(self.map.data):
             for col, tile in enumerate(tiles):
                 if tile == '1':
                     #call class constructor without assigning variable
-                    Wall(self, col, row)
+                    Wall(self, col, row, False)
                 if tile == 'P':
-                    self.player = Player(self, col, row)
+                    self.player = Player(self, col, row, False)
                 if tile == 'B':
-                    Box(self, col, row, 2)
+                    Box(self, col, row, 2, False)
                 if tile == 'M':
-                    Magnet(self, col, row, 1)
+                    Magnet(self, col, row, 1, False)
+        #For the winCon map
+        for row,tiles in enumerate(self.winMap.data):
+            for col, tile in enumerate(tiles):
+                print(row,tiles,col,tile)
 
-        print(self.theplayer.sprites())
 
 
         #Telling the game to run
@@ -77,6 +83,8 @@ class Game:
             self.update()
             self.draw()
 
+
+
     def events(self):
         #events with peripheral devices
         for event in pg.event.get():
@@ -88,6 +96,13 @@ class Game:
                 #print(event.pos)
             if event.type == pg.KEYDOWN:
                 self.player.get_keys()
+
+                keys = pg.key.get_pressed()
+
+                if keys[pg.K_m]:
+                    self.viewWinCon = not self.viewWinCon
+                    print(self.viewWinCon)
+        
     
 
 
@@ -124,22 +139,18 @@ class Game:
 
     def draw(self):
         #BG color
-        self.screen.fill(BLUE)
+        if not self.viewWinCon:
+            self.screen.fill(BLUE)
 
-        #Writing texts
+            #Writing texts
 
-        '''
-        self.draw_text("Hello World", 24, WHITE, WIDTH/2, TILESIZE)
-        self.draw_text(str(self.dt), 24, WHITE, WIDTH/2, HEIGHT/4)
-        self.draw_text(str(self.game_cooldown.time), 24, WHITE, WIDTH/2, HEIGHT/2)
-        self.draw_text(str(self.player.pos), 24, WHITE, WIDTH/2, HEIGHT/1.5)
-        '''
+            self.draw_text(str(int(pg.time.get_ticks()/100)), 50, WHITE, WIDTH-75, HEIGHT-75)
+            #Drawing objects
 
-        self.draw_text(str())
-
-        #Drawing objects
-        self.all_sprites.draw(self.screen)
-        pg.display.flip()
+            self.all_sprites.draw(self.screen)
+            pg.display.flip()
+        else:
+            self.screen.fill(BLACK)
 
     def draw_text(self, text, size, color, x, y):
         font_name = pg.font.match_font('arial')

@@ -10,18 +10,6 @@ from utils import *
 
 vec = pg.math.Vector2
 
-'''
-def futureMovement(center, centerVel, collider):
-
-    testRect = center.hit_rect.copy()
-
-
-    testRect.pos = center.pos + centerVel * center.game.dt
-    
-    if testRect.colliderect(collider):
-        return True
-    return False
-'''
 #Returns a bool depending on whether two objects are colliding
 def collide_hit_rect(one, two):
     if one.hit_rect != None and two.hit_rect != None:
@@ -32,7 +20,6 @@ def collide_hit_rect(one, two):
         return one.rect.colliderect(two.hit_rect)
     else:
         return one.rect.colliderect(two.rect)
-
 
 def collide_walls(sprite, spriteRect, group, dir):
     #Returns direction of collision, collider, distance between the centers in the direction stated
@@ -67,7 +54,6 @@ def collide_walls(sprite, spriteRect, group, dir):
 
     return None, None, None
 
-
 def collide_box(player, boxes, dir):
     collided = collide_walls(player, boxes, dir)
     if collided[0] != None:
@@ -75,12 +61,17 @@ def collide_box(player, boxes, dir):
             if collided == "right":
                 futurePoint = collided[1].topright + PLAYER_SPEED * player.game.dt
                 
-
-
 class Player(Sprite):
-    def __init__(self, game, x, y):
+    def __init__(self, game, x, y, isWinSprite):
         #Adding to sprites -> draw
-        self.groups = game.all_sprites, game.theplayer
+        self.isWinSprite = isWinSprite
+        self.groups = game.theplayer
+
+        if not isWinSprite:
+            game.all_sprites.add(self)
+        else:
+            game.winSprite.add(self)
+
         Sprite.__init__(self, self.groups)
         self.game = game
         
@@ -178,58 +169,63 @@ class Player(Sprite):
     '''
 
     def update(self, updateType):
-        if updateType == "movementX":
-            #Moves hitbox depending on keys x direction
-            self.get_keys()
-            self.pos.x += self.vel.x * self.game.dt
-            self.hit_rect.centerx = self.pos.x
-
-        
-        if updateType == "movementY":
-            #Moves hitbox depending on keys y direction
-            self.get_keys()
-            self.pos.y += self.vel.y * self.game.dt
-            self.hit_rect.centery = self.pos.y
-    
-        
-        if updateType == "collisionsY":
-            #Moves hitbox depending on walls in y direction
-            pushDirY = collide_walls(self, self.hit_rect, self.game.all_walls, 'y')
-
-            #If collision in y direction, move player to correct edge of wall and stop y movement
-            if pushDirY[0] != None:
-                if pushDirY[0] == "down":
-                    self.pos.y = pushDirY[1].rect.top - self.hit_rect.height / 2
-                if pushDirY[0] == "up":
-                    self.pos.y = pushDirY[1].rect.bottom + self.hit_rect.height / 2
-                self.vel.y = 0
-                self.hit_rect.centery = self.pos.y
-                
-        if updateType == "collisionsX":
-            #Moves hitbox depending on walls in x direction
-            self.hit_rect.centerx = self.pos.x
-            pushDirX = collide_walls(self, self.hit_rect, self.game.all_walls, 'x')
-
-            #If collision in x direction, move player to correct edge of wall and stop x movement 
-            if pushDirX[0] != None:
-                if pushDirX[0] == "right":
-                    self.pos.x = pushDirX[1].rect.left - self.hit_rect.width / 2
-                if pushDirX[0] == "left":
-                    self.pos.x = pushDirX[1].rect.right + self.hit_rect.width / 2
-                self.vel.x = 0
+        if not self.isWinSprite:
+            if updateType == "movementX":
+                #Moves hitbox depending on keys x direction
+                self.get_keys()
+                self.pos.x += self.vel.x * self.game.dt
                 self.hit_rect.centerx = self.pos.x
 
-        if updateType == "updateSprite":
-            self.rect.center = self.pos
+            
+            if updateType == "movementY":
+                #Moves hitbox depending on keys y direction
+                self.get_keys()
+                self.pos.y += self.vel.y * self.game.dt
+                self.hit_rect.centery = self.pos.y
         
             
+            if updateType == "collisionsY":
+                #Moves hitbox depending on walls in y direction
+                pushDirY = collide_walls(self, self.hit_rect, self.game.all_walls, 'y')
+
+                #If collision in y direction, move player to correct edge of wall and stop y movement
+                if pushDirY[0] != None:
+                    if pushDirY[0] == "down":
+                        self.pos.y = pushDirY[1].rect.top - self.hit_rect.height / 2
+                    if pushDirY[0] == "up":
+                        self.pos.y = pushDirY[1].rect.bottom + self.hit_rect.height / 2
+                    self.vel.y = 0
+                    self.hit_rect.centery = self.pos.y
+                    
+            if updateType == "collisionsX":
+                #Moves hitbox depending on walls in x direction
+                self.hit_rect.centerx = self.pos.x
+                pushDirX = collide_walls(self, self.hit_rect, self.game.all_walls, 'x')
+
+                #If collision in x direction, move player to correct edge of wall and stop x movement 
+                if pushDirX[0] != None:
+                    if pushDirX[0] == "right":
+                        self.pos.x = pushDirX[1].rect.left - self.hit_rect.width / 2
+                    if pushDirX[0] == "left":
+                        self.pos.x = pushDirX[1].rect.right + self.hit_rect.width / 2
+                    self.vel.x = 0
+                    self.hit_rect.centerx = self.pos.x
+
+            if updateType == "updateSprite":
+                self.rect.center = self.pos
+                
 class Box(Sprite):
-    def __init__(self, game, x, y, _layer):
+    def __init__(self, game, x, y, _layer, isWinSprite):
         self._layer = _layer
         self.game = game
 
         #all_boxes is for anything that could be pushed
-        self.groups = game.all_boxes, game.all_walls, game.all_sprites
+        self.groups = game.all_boxes, game.all_walls
+
+        if not isWinSprite:
+            game.all_sprites.add(self)
+        else:
+            game.winSprite.add(self)
 
         Sprite.__init__(self, self.groups)
 
@@ -324,10 +320,16 @@ class Box(Sprite):
             self.rect.center = self.pos
             
 class Magnet(Sprite):
-    def __init__(self, game, x, y, _layer):
+    def __init__(self, game, x, y, _layer, isWinSprite):
 
         self._layer = _layer
-        self.groups = game.all_sprites, game.all_mags
+        self.groups = game.all_mags
+
+        if not isWinSprite:
+            game.all_sprites.add(self)
+        else:
+            game.winSprite.add(self)
+
         Sprite.__init__(self, self.groups)
         self.game = game
         self.image = pg.Surface((TILESIZE, TILESIZE))
@@ -339,10 +341,42 @@ class Magnet(Sprite):
         self.hit_rect = pg.Rect(0,0,TILESIZE,TILESIZE)
         self.hit_rect.center = self.pos
 
-        print("mag cent" + str(self.pos))
 
     def update(self, updateType):
         pass
+
+class Floor(Sprite):
+    def __init__(self, game, x, y, width, height):
+        self._layer = 0
+        self.groups = game.winSprites
+        self.image = pg.Surface((width*TILESIZE, height*TILESIZE))
+        self.image.fill(BLUE)
+        self.rect = self.image.get_rect()
+        self.pos = vec(x,y) * TILESIZE
+
+class Wall(Sprite):
+    def __init__(self, game, x, y, isWinSprite):
+        #Similar to object, but will stop collision instead
+        if not isWinSprite:
+            self.groups = game.all_sprites, game.all_walls, game.nonBox
+        else:
+            self.groups = game.all_sprites, game.all_walls, game.nonBox, game.winSprites
+
+        Sprite.__init__(self, self.groups)
+        self.game = game
+
+        self.image = game.wall_img
+        self.rect = self.image.get_rect()
+        self.pos = vec(x,y) * TILESIZE
+        self.rect.center = self.pos
+        self.hit_rect = None
+    def update(self, updateType):
+        hits = pg.sprite.spritecollide(self, self.game.all_mobs, False)
+
+
+
+
+
 
 #not built upon yet
 class Projectile(Sprite):
@@ -366,8 +400,6 @@ class Projectile(Sprite):
 
         #print(self.game.theplayer)
 
-
-
 class Object(Sprite):
     def __init__(self, game, x, y):
         #Similar to mob, added to all_walls
@@ -382,21 +414,6 @@ class Object(Sprite):
         self.rect.center = self.pos
     def update(self, updateType):
         pass
-
-class Wall(Sprite):
-    def __init__(self, game, x, y):
-        #Similar to object, but will stop collision instead
-        self.groups = game.all_sprites, game.all_walls, game.nonBox
-        Sprite.__init__(self, self.groups)
-        self.game = game
-
-        self.image = game.wall_img
-        self.rect = self.image.get_rect()
-        self.pos = vec(x,y) * TILESIZE
-        self.rect.center = self.pos
-        self.hit_rect = None
-    def update(self, updateType):
-        hits = pg.sprite.spritecollide(self, self.game.all_mobs, False)
 
 class Coin(Sprite):
     def __init__(self, game, x, y):
