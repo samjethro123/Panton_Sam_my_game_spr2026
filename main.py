@@ -6,13 +6,6 @@ from settings import *
 from sprites import *
 from utils import *
 
-def test(one, two):
-    return one, two
-
-print(test(1,2))
-one,two = test(1,2)
-print(one)
-
 #the game class that will be instantiaed in order to run the game...
 class Game:
     def __init__(self):
@@ -43,11 +36,12 @@ class Game:
         #Creating every group, so that we could access all of a certain type of object.
         self.theplayer = pg.sprite.Group()
         self.all_sprites = pg.sprite.LayeredUpdates()
-        self.winSprite = pg.sprite.LayeredUpdates()
+        self.winSprites = pg.sprite.LayeredUpdates()
         self.all_walls = pg.sprite.Group()
         self.all_mobs = pg.sprite.Group()
         self.all_boxes = pg.sprite.Group()
         self.all_mags = pg.sprite.Group()
+        self.all_floors = pg.sprite.Group()
         self.nonBox = pg.sprite.Group()
 
 
@@ -64,12 +58,47 @@ class Game:
                     Box(self, col, row, 2, False)
                 if tile == 'M':
                     Magnet(self, col, row, 1, False)
+
         #For the winCon map
-        for row,tiles in enumerate(self.winMap.data):
-            for col, tile in enumerate(tiles):
-                print(row,tiles,col,tile)
 
+        print(self.winMap.data)
 
+        self.snippets = []
+        self.spots = []
+        nextLine = 0
+
+        for i in range(len(self.winMap.data)):
+            if self.winMap.data[i] == '{':
+                self.snippet = []
+                self.spot = []
+                nextLine = i
+                while self.winMap.data[nextLine+1] != '}':
+                    nextLine += 1
+                    self.snippet.append(self.winMap.data[nextLine])
+                self.spot.append(int(self.winMap.data[nextLine+2])-1)
+                self.spot.append(int(self.winMap.data[nextLine+3])-1)
+
+                self.snippets.append(self.snippet)
+                self.spots.append(self.spot)
+
+        print(self.snippets)
+        print(self.spots)
+
+        for i in range(len(self.snippets)):
+            for row,tiles in enumerate(self.snippets[i]):
+                for col, tile in enumerate(tiles):
+                    if tile == '.':
+                        Floor(self, col + self.spots[i][0], row + self.spots[i][1])
+                    if tile == '1':
+                        Wall(self, col + self.spots[i][0], row + self.spots[i][1], True)
+                    if tile == 'P':
+                        self.player = Player(self, col + self.spots[i][0], row + self.spots[i][1], True)
+                    if tile == 'B':
+                        Box(self, col + self.spots[i][0], row + self.spots[i][1], 0, True)
+                    if tile == 'M':
+                        Magnet(self, col + self.spots[i][0], row + self.spots[i][1], 0, True)
+
+        self.piss = WinCheck([self.snippets, self.spots], self)
 
         #Telling the game to run
         self.run()
@@ -79,9 +108,10 @@ class Game:
             #self.dt is delta time, how much time passsed in real life.
             self.dt = self.clock.tick(FPS) / 1000
             #Looping through everything while it runs.
-            self.events()
-            self.update()
+            if not self.viewWinCon:
+                self.update()
             self.draw()
+            self.events()
 
 
 
@@ -103,6 +133,8 @@ class Game:
                     self.viewWinCon = not self.viewWinCon
                     print(self.viewWinCon)
         
+                if keys[pg.K_n]:
+                    WinCheck.checkWin(self.piss)
     
 
 
@@ -140,6 +172,7 @@ class Game:
     def draw(self):
         #BG color
         if not self.viewWinCon:
+
             self.screen.fill(BLUE)
 
             #Writing texts
@@ -148,9 +181,13 @@ class Game:
             #Drawing objects
 
             self.all_sprites.draw(self.screen)
+            
             pg.display.flip()
         else:
             self.screen.fill(BLACK)
+            print(self.winSprites)
+            self.winSprites.draw(self.screen)
+            pg.display.flip()
 
     def draw_text(self, text, size, color, x, y):
         font_name = pg.font.match_font('arial')

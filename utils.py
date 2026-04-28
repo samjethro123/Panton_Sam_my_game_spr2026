@@ -59,15 +59,52 @@ class SpriteSheet:
         return image
 
 class WinCheck:
-    def __init__(self, winFrame):
-        #winFrame is the name of the txt file describing the win condition
-        self.game_dir = path.dirname(__file__)
-        self.winmap = []
+    def __init__(self, winFrame, game):
+        self.game = game
 
-        with open(winFrame, 'rt') as f:
-            for line in f:
-                self.data.append(line.strip())
+        '''
+        Winframe
+            Snippets
+                Snippet
+                    Row
+                        Column
+            Spots
+                Spot
+                    X spot
+                    Y spot
+        '''
+        self.winFrame = winFrame
 
-    def checkWin():
-        pass
+    def checkWin(self):
+
+        print('pressed n')
+        print(self.winFrame)
+
+        walls = iter(self.game.all_walls)
+        boxes = iter(self.game.all_boxes)
+        magnets = iter(self.game.all_mags)
+        player = iter(self.game.theplayer)
+        floors = iter(self.game.all_floors)
+        
+        for snippet in self.winFrame[0]:
+            print(snippet)
+            for row in snippet:
+                print(row)
+                for column in row:
+                    print(column)
+                    if column == '.':
+                        pass
+                    if column == 'B':
+                        for box in self.game.all_boxes:
+                            if next(boxes).pos == (self.winFrame[1][self.winFrame.index(snippet[0])][0]*TILESIZE+self.row*TILESIZE, self.winFrame[1][self.winFrame.index(snippet)][0]*TILESIZE+self.row*TILESIZE):
+                                print('win!')
+                            else:
+                                print('not yet!')
+                    if column == 'M':
+                        pass
+                    if column == 'P':
+                        pass
+
+
+
 
