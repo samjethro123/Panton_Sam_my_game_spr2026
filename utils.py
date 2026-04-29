@@ -77,9 +77,6 @@ class WinCheck:
 
     def checkWin(self):
 
-        print('pressed n')
-        print(self.winFrame)
-
         walls = iter(self.game.all_walls)
         boxes = iter(self.game.all_boxes)
         magnets = iter(self.game.all_mags)
@@ -87,16 +84,25 @@ class WinCheck:
         floors = iter(self.game.all_floors)
         
         for snippet in self.winFrame[0]:
-            print(snippet)
             for row in snippet:
-                print(row)
                 for column in row:
-                    print(column)
                     if column == '.':
                         pass
                     if column == 'B':
                         for box in self.game.all_boxes:
-                            if next(boxes).pos == (self.winFrame[1][self.winFrame.index(snippet[0])][0]*TILESIZE+self.row*TILESIZE, self.winFrame[1][self.winFrame.index(snippet)][0]*TILESIZE+self.row*TILESIZE):
+                            nextBox = next(boxes)
+                            print(nextBox.pos)
+                            winPos = pg.Vector2(self.winFrame[1][self.winFrame[0].index(snippet)][0]*TILESIZE+snippet.index(row)*TILESIZE, self.winFrame[1][self.winFrame[0].index(snippet)][1]*TILESIZE+row.index(column)*TILESIZE)
+                            print(winPos)
+
+                            if winPos.x == nextBox.pos.x:
+                                print('x true')
+                            if winPos.y == nextBox.pos.y:
+                                print('y true')
+
+
+
+                            if nextBox.pos == pg.Vector2(self.winFrame[1][self.winFrame[0].index(snippet)][0]*TILESIZE+snippet.index(row)*TILESIZE, self.winFrame[1][self.winFrame[0].index(snippet)][1]*TILESIZE+row.index(column)*TILESIZE):
                                 print('win!')
                             else:
                                 print('not yet!')

@@ -135,6 +135,7 @@ class Game:
         
                 if keys[pg.K_n]:
                     WinCheck.checkWin(self.piss)
+                    print('n press')
     
 
 
