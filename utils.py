@@ -18,7 +18,6 @@ class Map:
             self.width = self.tilewidth * TILESIZE
             self.height = self.tileheight * TILESIZE
 
-
 #this class creates a countdown
 class Cooldown:
     def __init__(self, time):
@@ -37,14 +36,31 @@ class Cooldown:
         return False
     
 class Timer:
-    def __init__(self):
+    def __init__(self, pausetime):
         self.time = 0
-    def tick(self, dt):
-        self.time += dt
-    def restart(self):
+        self.pausestart = 0
+        self.pausetime = pausetime
+
+    def reset(self):
+        self.pausetime += pg.time.get_ticks()
+        return self.pausetime
+
+    def tick(self, paused):
+        if not paused:
+            self.time = pg.time.get_ticks()-self.pausetime
+            print(self.pausetime)
+            print(self.time)
+
+    def pause(self):
+        self.pausestart = pg.time.get_ticks()
         self.time = 0
+    
+    def endpause(self):
+        self.pausetime += pg.time.get_ticks()-self.pausestart
+
     def whatTime(self):
-        return int(self.time)
+        return int(self.time) / TICKLENGTH
+    
     
 class SpriteSheet:
     def __init__(self, filename):
@@ -91,25 +107,19 @@ class WinCheck:
                     if column == 'B':
                         for box in self.game.all_boxes:
                             nextBox = next(boxes)
-                            print(nextBox.pos)
                             winPos = pg.Vector2(self.winFrame[1][self.winFrame[0].index(snippet)][0]*TILESIZE+snippet.index(row)*TILESIZE, self.winFrame[1][self.winFrame[0].index(snippet)][1]*TILESIZE+row.index(column)*TILESIZE)
-                            print(winPos)
 
-                            if winPos.x == nextBox.pos.x:
-                                print('x true')
-                            if winPos.y == nextBox.pos.y:
-                                print('y true')
-
-
-
-                            if nextBox.pos == pg.Vector2(self.winFrame[1][self.winFrame[0].index(snippet)][0]*TILESIZE+snippet.index(row)*TILESIZE, self.winFrame[1][self.winFrame[0].index(snippet)][1]*TILESIZE+row.index(column)*TILESIZE):
-                                print('win!')
+                            if nextBox.pos == winPos:
+                                return True
                             else:
                                 print('not yet!')
+
                     if column == 'M':
                         pass
                     if column == 'P':
                         pass
+
+        return False
 
 
 

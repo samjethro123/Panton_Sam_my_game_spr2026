@@ -18,6 +18,8 @@ MAG_STRENGTH = 1
 IDLE_RATE = 1000
 WALKING_RATE = 1
 
+TICKLENGTH = 1000
+
 #Hidden mobs
 
 #Color Values
