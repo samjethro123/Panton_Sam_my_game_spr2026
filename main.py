@@ -28,6 +28,24 @@ class Game:
 
         self.paused = False
 
+        self.level = 2
+
+        self.mapOrder = [
+            'level1.txt',
+            'level2.txt',
+            'level3.txt',
+            'level4.txt',
+            'level5.txt'
+        ]
+
+        self.winMapOrder = [
+            'level1win.txt',
+            'level2win.txt',
+            'level3win.txt',
+            'level4win.txt',
+            'level5win.txt'
+        ]
+
     #a method is a function tied to a Class
 
     def load_data(self):
@@ -35,11 +53,14 @@ class Game:
         self.game_dir = path.dirname(__file__)
         self.img_dir = path.join(self.game_dir, 'images')
         self.wall_img = pg.image.load(path.join(self.img_dir, 'WallSprite.png'))
-        self.map = Map(path.join(self.game_dir, 'level1.txt'), False)
-        self.winMap = Map(path.join(self.game_dir, 'level1win.txt'), False)
+        self.gun_img = pg.image.load(path.join(self.img_dir, 'floorgun.png'))
+
+        self.map = Map(path.join(self.game_dir, self.mapOrder[self.level-1]), False)
+        self.winMap = Map(path.join(self.game_dir, self.winMapOrder[self.level-1]), False)
 
     def new(self):
-        #Starts the game
+        #Starts the game depending on the level
+
         #Creating every group, so that we could access all of a certain type of object.
         self.theplayer = pg.sprite.Group()
         self.all_sprites = pg.sprite.LayeredUpdates()
@@ -50,6 +71,7 @@ class Game:
         self.all_mags = pg.sprite.Group()
         self.all_floors = pg.sprite.Group()
         self.nonBox = pg.sprite.Group()
+        self.all_guns = pg.sprite.Group()
 
         self.load_data()
 
@@ -65,6 +87,8 @@ class Game:
                     Box(self, col, row, 2, False)
                 if tile == 'M':
                     Magnet(self, col, row, 1, False)
+                if tile == 'G':
+                    Gun(self, col, row, False)
 
         #For the winCon map
         print(self.winMap.data)
@@ -95,7 +119,8 @@ class Game:
                 #wintick is a number determining which tick the win screen has to be on
                 self.snippets.append(self.snippet)
                 self.spots.append(self.spot)
-                self.wintick = int(self.winMap.data[nextLine+4])
+            if self.winMap.data[i] == 'wintick':
+                self.wintick = int(self.winMap.data[i+1])
 
 
         #create mobs that will be drawn when we choose to see the future so that the player can see the win condition
@@ -135,6 +160,7 @@ class Game:
             self.draw()
             self.events()
 
+            #Checks for the win condition
             if floor(Timer.whatTime(self.timer)) == self.wintick:
                 print('start wincheck')
 
@@ -147,6 +173,9 @@ class Game:
                     self.draw_text(str(winstate), 100, YELLOW, WIDTH/2, HEIGHT/2)
                     pg.display.flip()
 
+
+
+
                     for event in pg.event.get():
                         if event.type == pg.QUIT:
                             if self.playing:
@@ -157,6 +186,8 @@ class Game:
                             keys = pg.key.get_pressed()
                     
                             if keys[pg.K_r]:
+                                if winstate == True:
+                                    self.level+=1
                                 lostState = False
                                 self.pausetime = Timer.reset(self.timer) - self.pausetime
                                 self.new()

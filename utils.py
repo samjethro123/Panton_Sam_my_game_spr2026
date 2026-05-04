@@ -48,8 +48,6 @@ class Timer:
     def tick(self, paused):
         if not paused:
             self.time = pg.time.get_ticks()-self.pausetime
-            print(self.pausetime)
-            print(self.time)
 
     def pause(self):
         self.pausestart = pg.time.get_ticks()
@@ -95,6 +93,8 @@ class WinCheck:
 
         walls = iter(self.game.all_walls)
         boxes = iter(self.game.all_boxes)
+        print(self.game.all_boxes)
+        print(boxes)
         magnets = iter(self.game.all_mags)
         player = iter(self.game.theplayer)
         floors = iter(self.game.all_floors)
@@ -106,10 +106,14 @@ class WinCheck:
                         pass
                     if column == 'B':
                         for box in self.game.all_boxes:
-                            nextBox = next(boxes)
+                            
+
                             winPos = pg.Vector2(self.winFrame[1][self.winFrame[0].index(snippet)][0]*TILESIZE+snippet.index(row)*TILESIZE, self.winFrame[1][self.winFrame[0].index(snippet)][1]*TILESIZE+row.index(column)*TILESIZE)
 
-                            if nextBox.pos == winPos:
+                            print(winPos)
+                            print(box.pos)
+                            if box.pos == winPos:
+                                print('one down')
                                 return True
                             else:
                                 print('not yet!')

@@ -239,9 +239,28 @@ class Box(Sprite):
 
         self.rect.center = self.pos
         
+
     def update(self, updateType): 
         if not self.isWinSprite:
+            '''
+            Psuedocode for box on box collision:
+                A variable which prioritizes which box is moved:
+                    If a box is pushed by the player, give it a variable of low value which prevents it from being moved by other boxes of higher variable value
+                    Every box that that box pushes, give it a variable of higher value
+                    A box automatically has a high value until pushed by the player or another box
+            '''
+        
+
+
             if updateType == "collisionsX":
+                #Box Box collision
+                boxDirX = collide_walls(self, self.hit_rect, self.game.all_boxes, "x")
+                if boxDirX[0] != None:
+                    if boxDirX[0] == "right":
+                        self.pos.x = boxDirX[1].rect.left - self.hit_rect.width / 2
+                    if boxDirX[0] == "left":
+                        self.pos.x = boxDirX[1].rect.right + self.hit_rect.width / 2
+                self.hit_rect.centerx = self.pos.x
 
                 #Player Box collision
                 pushingDirX = collide_walls(self, self.hit_rect, self.game.theplayer, "x")
@@ -280,6 +299,14 @@ class Box(Sprite):
                     self.hit_rect.centerx = self.pos.x
             
             if updateType == 'collisionsY':
+                #Box Box collision
+                boxDirY = collide_walls(self, self.hit_rect, self.game.all_boxes, "y")
+                if boxDirY[0] != None:
+                    if boxDirY[0] == "down":
+                        self.pos.y = boxDirY[1].rect.top - self.hit_rect.height / 2
+                    if boxDirY[0] == "up":
+                        self.pos.y = boxDirY[1].rect.bottom + self.hit_rect.height / 2
+                self.hit_rect.centery = self.pos.y
 
                 #Player Box collision
                 pushingDirY = collide_walls(self, self.hit_rect, self.game.theplayer, "y")
@@ -352,8 +379,6 @@ class Floor(Sprite):
         self.groups = game.winSprites, game.all_floors
         Sprite.__init__(self, self.groups)
 
-        print(self.groups)
-
         self.image = pg.Surface((TILESIZE, TILESIZE))
         self.image.fill(BLUE)
         self.rect = self.image.get_rect()
@@ -366,7 +391,6 @@ class Wall(Sprite):
         #Similar to object, but will stop collision instead
         if not isWinSprite:
             self.groups = game.all_sprites, game.all_walls, game.nonBox
-            print('wall added to ' + str(game.all_sprites))
         else:
             self.groups = game.all_sprites, game.all_walls, game.nonBox, game.winSprites
 
@@ -381,10 +405,19 @@ class Wall(Sprite):
     def update(self, updateType):
         hits = pg.sprite.spritecollide(self, self.game.all_mobs, False)
 
-
-
-
-
+class Gun(Sprite):
+    def __init__(self, game, x, y, isWinSprite):
+        if not isWinSprite:
+            self.groups = game.all_sprites, game.all_guns
+        else:
+            self.groups = game.winSprites
+        Sprite.__init__(self, self.groups)
+        self.game = game
+        self.image = game.gun_img
+        self.rect = self.image.get_rect()
+        self.pos = vec(x,y) * TILESIZE
+        self.rect.center = self.pos
+        self.hit_rect = None
 
 #not built upon yet
 class Projectile(Sprite):
