@@ -22,6 +22,7 @@ def collide_hit_rect(one, two):
         return one.rect.colliderect(two.rect)
 
 def collide_walls(sprite, spriteRect, group, dir):
+
     #Returns direction of collision, collider, distance between the centers in the direction stated
 
     #Polymorphed to support other collisions
@@ -229,13 +230,14 @@ class Box(Sprite):
 
         Sprite.__init__(self, self.groups)
 
-        self.image = pg.Surface((TILESIZE, TILESIZE))
-        self.image.fill(RED)
+        self.image = game.boximg
         self.rect = self.image.get_rect()
         self.vel = vec(0,0)
 
         self.pos = vec(x,y) * TILESIZE
         self.hit_rect = pg.Rect(0,0,TILESIZE,TILESIZE)
+
+        self.priority = 100
 
         self.rect.center = self.pos
         
@@ -249,32 +251,50 @@ class Box(Sprite):
                     Every box that that box pushes, give it a variable of higher value
                     A box automatically has a high value until pushed by the player or another box
             '''
-        
 
-
-            if updateType == "collisionsX":
+            if updateType == "boxX":
                 #Box Box collision
-                boxDirX = collide_walls(self, self.hit_rect, self.game.all_boxes, "x")
+                otherboxes = self.game.all_boxes.copy()
+                otherboxes.remove(self)
+                
+                boxDirX = collide_walls(self, self.hit_rect, otherboxes, "x")
                 if boxDirX[0] != None:
-                    if boxDirX[0] == "right":
-                        self.pos.x = boxDirX[1].rect.left - self.hit_rect.width / 2
-                    if boxDirX[0] == "left":
-                        self.pos.x = boxDirX[1].rect.right + self.hit_rect.width / 2
-                self.hit_rect.centerx = self.pos.x
+                    if boxDirX[1].priority < self.priority:
+                        if boxDirX[0] == "right":
+                            self.pos.x = boxDirX[1].rect.left - self.hit_rect.width / 2
+                            self.hit_rect.centerx = self.pos.x
+                            while collide_walls(self, self.hit_rect, otherboxes, "x")[0] != None:
+                                self.pos.x -= 1
+                                self.hit_rect.centerx = self.pos.x
+                        if boxDirX[0] == "left":
+                            self.pos.x = boxDirX[1].rect.right + self.hit_rect.width / 2
+                            self.hit_rect.centerx = self.pos.x
+                            while collide_walls(self, self.hit_rect, otherboxes, "x")[0] != None:
+                                self.pos.x += 1
+                                self.hit_rect.centerx = self.pos.x
+                
 
+            if updateType == "playerX":
                 #Player Box collision
                 pushingDirX = collide_walls(self, self.hit_rect, self.game.theplayer, "x")
-
+                #print('pushingDirX:' + str(pushingDirX))
                 if pushingDirX[0] != None:
                     if pushingDirX[0] == "right":
                         self.vel.x = -PLAYER_SPEED
                     elif pushingDirX[0] == "left":
                         self.vel.x = PLAYER_SPEED
+                    self.priority = 0
+                else:
+                    self.priority = 100
 
                 self.pos.x += self.vel.x * self.game.dt
                 self.vel.x = 0
                 self.hit_rect.centerx = self.pos.x
+                
 
+
+
+            if updateType == "wallX":
                 #Box Wall collision
                 pushDirX = collide_walls(self, self.hit_rect, self.game.nonBox, 'x')
                 if pushDirX[0] != None:
@@ -283,9 +303,11 @@ class Box(Sprite):
                     if pushDirX[0] == "left":
                         self.pos.x = pushDirX[1].rect.right + self.hit_rect.width / 2
                     self.vel.x = 0
+                    self.priority = -100
 
                 self.hit_rect.centerx = self.pos.x
 
+            if updateType == "magX":
                 #Box Magnet collision
                 magDirX = collide_walls(self, self.hit_rect, self.game.all_mags, 'x')
                 if magDirX[2] != 0 and magDirX[0] != None:
@@ -298,16 +320,30 @@ class Box(Sprite):
                         self.pos.x = magDirX[1].rect.centerx
                     self.hit_rect.centerx = self.pos.x
             
-            if updateType == 'collisionsY':
+            #Y movements
+            if updateType == 'boxY':
                 #Box Box collision
-                boxDirY = collide_walls(self, self.hit_rect, self.game.all_boxes, "y")
+                otherboxes = self.game.all_boxes.copy()
+                otherboxes.remove(self)
+                boxDirY = collide_walls(self, self.hit_rect, otherboxes, "y")
                 if boxDirY[0] != None:
-                    if boxDirY[0] == "down":
-                        self.pos.y = boxDirY[1].rect.top - self.hit_rect.height / 2
-                    if boxDirY[0] == "up":
-                        self.pos.y = boxDirY[1].rect.bottom + self.hit_rect.height / 2
-                self.hit_rect.centery = self.pos.y
+                    print(boxDirY[1].priority-self.priority)
+                    if boxDirY[1].priority < self.priority:
+                        if boxDirY[0] == "down":
+                            self.pos.y = boxDirY[1].rect.top - self.hit_rect.height / 2
+                            self.hit_rect.centery = self.pos.y
+                            while collide_walls(self, self.hit_rect, otherboxes, "y")[0] != None:
+                                self.pos.y -= 1
+                                self.hit_rect.centery = self.pos.y
+                        if boxDirY[0] == "up":
+                            self.pos.y = boxDirY[1].rect.bottom + self.hit_rect.height / 2
+                            self.hit_rect.centery = self.pos.y
+                            while collide_walls(self, self.hit_rect, otherboxes, "y")[0] != None:
+                                self.pos.y += 1
+                                self.hit_rect.centery = self.pos.y
+                    self.hit_rect.centery = self.pos.y
 
+            if updateType == "playerY":
                 #Player Box collision
                 pushingDirY = collide_walls(self, self.hit_rect, self.game.theplayer, "y")
 
@@ -316,11 +352,17 @@ class Box(Sprite):
                         self.vel.y = -PLAYER_SPEED
                     elif pushingDirY[0] == "up":
                         self.vel.y = PLAYER_SPEED
+                    self.priority = 0
+                else:
+                    self.priority = 100
                 
                 self.pos.y += self.vel.y * self.game.dt
                 self.vel.y = 0
                 self.hit_rect.centery = self.pos.y
+    
+            
 
+            if updateType == "wallY":
                 #Box Wall collision
                 pushDirY = collide_walls(self, self.hit_rect, self.game.nonBox, 'y')
                 if pushDirY[0] != None:
@@ -329,9 +371,11 @@ class Box(Sprite):
                     if pushDirY[0] == "up":
                         self.pos.y = pushDirY[1].rect.bottom + self.hit_rect.height / 2
                     self.vel.y = 0
+                    self.priority = -100
 
                 self.hit_rect.centery = self.pos.y
 
+            if updateType == "magY":
                 #Box Magnet detection
                 magDirY = collide_walls(self, self.hit_rect, self.game.all_mags, 'y')
                 if magDirY[2] != 0 and magDirY[0] != None:

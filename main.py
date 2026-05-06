@@ -54,6 +54,7 @@ class Game:
         self.img_dir = path.join(self.game_dir, 'images')
         self.wall_img = pg.image.load(path.join(self.img_dir, 'WallSprite.png'))
         self.gun_img = pg.image.load(path.join(self.img_dir, 'floorgun.png'))
+        self.boximg = pg.image.load(path.join(self.img_dir, 'box.png'))
 
         self.map = Map(path.join(self.game_dir, self.mapOrder[self.level-1]), False)
         self.winMap = Map(path.join(self.game_dir, self.winMapOrder[self.level-1]), False)
@@ -247,11 +248,19 @@ class Game:
         '''
 
         self.player.update('movementX')
-        self.all_boxes.update('collisionsX')
+        self.all_boxes.update('playerX')
+        self.all_boxes.update('boxX')
+        self.all_boxes.update('wallX')
+        self.all_boxes.update("boxY")
+        self.all_boxes.update('magX')
         self.player.update('collisionsX')
 
         self.player.update('movementY')
-        self.all_boxes.update('collisionsY')
+        self.all_boxes.update('playerY')
+        self.all_boxes.update('boxY')
+        self.all_boxes.update('wallY')
+        self.all_boxes.update('boxY')
+        self.all_boxes.update('magY')
         self.player.update('collisionsY')
 
         self.all_sprites.update('updateSprite')
